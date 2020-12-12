@@ -1,0 +1,40 @@
+kind: DaemonSet
+apiVersion: apps/v1
+metadata:
+  name: conntrack-stats
+  namespace: kube-system
+  labels:
+    app: conntrack-stats
+spec:
+  selector:
+    matchLabels:
+      app: conntrack-stats
+  template:
+    metadata:
+      labels:
+        app: conntrack-stats
+    spec:
+      hostPID: true
+      hostNetwork: true
+      containers:
+        - name: conntrack-stats
+          image: threecomma/startup-conntrack:v1
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            privileged: true
+          env:
+          - name: STARTUP_SCRIPT
+            value: |
+              #! /bin/bash
+              set -o errexit
+              set -o pipefail
+              set -o nounset
+
+              HOST=$(hostname)
+              DATE=$(date)
+              PREFIX="$HOST $DATE "
+
+              while :; do
+              conntrack -S | sed -e "s/^/$PREFIX/" -e 's/$/suffix/'
+              sleep 30
+              done
